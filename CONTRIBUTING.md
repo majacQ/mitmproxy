@@ -5,7 +5,7 @@ forward, please consider contributing in the following areas:
 
 - **Maintenance:** We are *incredibly* thankful for individuals who are stepping up and helping with maintenance. This
   includes (but is not limited to) triaging issues, reviewing pull requests and picking up stale ones, helping out other
-  users on [StackOverflow](https://stackoverflow.com/questions/tagged/mitmproxy), creating minimal, complete and
+  users on [GitHub Discussions](https://github.com/mitmproxy/mitmproxy/discussions), creating minimal, complete and
   verifiable examples or test cases for existing bug reports, updating documentation, or fixing minor bugs that have
   recently been reported.
 - **Code Contributions:** We actively mark issues that we consider are [good first contributions](
@@ -14,8 +14,7 @@ forward, please consider contributing in the following areas:
 
 ## Development Setup
 
-To get started hacking on mitmproxy, please install a recent version of Python (we require at least Python 3.8).
-Then, do the following:
+To get started hacking on mitmproxy, please install the latest version of Python and do the following:
 
 ##### Linux / macOS
 
@@ -79,7 +78,7 @@ For speedier testing, you can also run [pytest](http://pytest.org/) directly on 
 
 ```shell
 cd test/mitmproxy/addons
-pytest --cov mitmproxy.addons.anticache --cov-report term-missing --looponfail test_anticache.py
+pytest --looponfail test_anticache.py
 ```
 
 Please ensure that all patches are accompanied by matching changes in the test suite. The project tries to maintain 100%
@@ -92,7 +91,7 @@ Keeping to a consistent code style throughout the project makes it easier to con
 We enforce the following check for all PRs:
 
 ```shell
-tox -e flake8
+tox -e lint
 ```
 
 If a linting error is detected, the automated pull request checks will fail and block merging.

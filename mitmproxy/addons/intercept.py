@@ -1,21 +1,18 @@
-import typing
+from typing import Optional
 
-from mitmproxy import flow, flowfilter
-from mitmproxy import exceptions
 from mitmproxy import ctx
+from mitmproxy import exceptions
+from mitmproxy import flow
+from mitmproxy import flowfilter
 
 
 class Intercept:
-    filt: typing.Optional[flowfilter.TFilter] = None
+    filt: flowfilter.TFilter | None = None
 
     def load(self, loader):
+        loader.add_option("intercept_active", bool, False, "Intercept toggle")
         loader.add_option(
-            "intercept_active", bool, False,
-            "Intercept toggle"
-        )
-        loader.add_option(
-            "intercept", typing.Optional[str], None,
-            "Intercept filter expression."
+            "intercept", Optional[str], None, "Intercept filter expression."
         )
 
     def configure(self, updated):
@@ -32,17 +29,14 @@ class Intercept:
 
     def should_intercept(self, f: flow.Flow) -> bool:
         return bool(
-                ctx.options.intercept_active
-                and self.filt
-                and self.filt(f)
-                and not f.is_replay
+            ctx.options.intercept_active
+            and self.filt
+            and self.filt(f)
+            and not f.is_replay
         )
 
     def process_flow(self, f: flow.Flow) -> None:
         if self.should_intercept(f):
-            assert f.reply
-            if f.reply.state != "start":
-                return ctx.log.debug("Cannot intercept request that is already taken by another addon.")
             f.intercept()
 
     # Handlers
@@ -54,4 +48,16 @@ class Intercept:
         self.process_flow(f)
 
     def tcp_message(self, f):
+        self.process_flow(f)
+
+    def udp_message(self, f):
+        self.process_flow(f)
+
+    def dns_request(self, f):
+        self.process_flow(f)
+
+    def dns_response(self, f):
+        self.process_flow(f)
+
+    def websocket_message(self, f):
         self.process_flow(f)

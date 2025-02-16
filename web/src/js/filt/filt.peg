@@ -45,7 +45,9 @@ var ASSET_TYPES = [
     new RegExp("application/x-javascript"),
     new RegExp("application/javascript"),
     new RegExp("text/css"),
-    new RegExp("image/.*")
+    new RegExp("image/.*"),
+    new RegExp("font/.*"),
+    new RegExp("application/font.*"),
 ];
 function assetFilter(flow) {
     if (flow.response) {
@@ -67,7 +69,7 @@ function body(regex){
     function bodyFilter(flow){
         return true;
     }
-    bodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmweb/issues/10";
+    bodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmproxy/issues/3609";
     return bodyFilter;
 }
 
@@ -77,7 +79,7 @@ function requestBody(regex){
     function requestBodyFilter(flow){
         return true;
     }
-    requestBodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmweb/issues/10";
+    requestBodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmproxy/issues/3609";
     return requestBodyFilter;
 }
 
@@ -87,7 +89,7 @@ function responseBody(regex){
     function responseBodyFilter(flow){
         return true;
     }
-    responseBodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmweb/issues/10";
+    responseBodyFilter.desc = "body filters are not implemented yet, see https://github.com/mitmproxy/mitmproxy/issues/3609";
     return responseBodyFilter;
 }
 
@@ -119,6 +121,12 @@ function domain(regex){
     domainFilter.desc = "domain matches " + regex;
     return domainFilter;
 }
+
+// ~dns
+function dnsFilter(flow){
+    return flow.type === "dns";
+}
+dnsFilter.desc = "is a DNS Flow";
 
 // ~dst
 function destination(regex){
@@ -252,6 +260,12 @@ function tcpFilter(flow){
 }
 tcpFilter.desc = "is a TCP Flow";
 
+// ~udp
+function udpFilter(flow){
+    return flow.type === "udp";
+}
+udpFilter.desc = "is a UDP Flow";
+
 // ~tq
 function requestContentType(regex){
     regex = new RegExp(regex, "i");
@@ -290,6 +304,10 @@ function contentType(regex){
 function url(regex){
     regex = new RegExp(regex, "i");
     function urlFilter(flow){
+        if (flow.type === "dns") {
+            const question = flow.request?.questions[0]
+            return question && regex.test(question.name)
+        }
         return flow.request && regex.test(flowutils.RequestUtils.pretty_url(flow.request));
     }
     urlFilter.desc = "url matches " + regex;
@@ -298,7 +316,7 @@ function url(regex){
 
 // ~websocket
 function websocketFilter(flow){
-    return flow.type === "websocket";
+    return !!flow.websocket;
 }
 websocketFilter.desc = "is a Websocket Flow";
 }
@@ -345,6 +363,7 @@ Expr
   / "~c" ws+ s:IntegerLiteral { return responseCode(s); }
   / "~comment" ws+ s:StringLiteral { return comment(s); }
   / "~d" ws+ s:StringLiteral { return domain(s); }
+  / "~dns" { return dnsFilter; }
   / "~dst" ws+ s:StringLiteral { return destination(s); }
   / "~e" { return errorFilter; }
   / "~h" ws+ s:StringLiteral { return header(s); }
@@ -361,6 +380,7 @@ Expr
   / "~src" ws+ s:StringLiteral { return source(s); }
   / "~s" { return responseFilter; }
   / "~tcp" { return tcpFilter; }
+  / "~udp" { return udpFilter; }
   / "~tq" ws+ s:StringLiteral { return requestContentType(s); }
   / "~ts" ws+ s:StringLiteral { return responseContentType(s); }
   / "~t" ws+ s:StringLiteral { return contentType(s); }

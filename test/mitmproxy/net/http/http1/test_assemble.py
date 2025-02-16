@@ -1,21 +1,21 @@
 import pytest
 
 from mitmproxy.http import Headers
-from mitmproxy.net.http.http1.assemble import (
-    assemble_request, assemble_request_head, assemble_response,
-    assemble_response_head, _assemble_request_line, _assemble_request_headers,
-    _assemble_response_headers,
-    assemble_body)
-from mitmproxy.test.tutils import treq, tresp
+from mitmproxy.net.http.http1.assemble import _assemble_request_headers
+from mitmproxy.net.http.http1.assemble import _assemble_request_line
+from mitmproxy.net.http.http1.assemble import _assemble_response_headers
+from mitmproxy.net.http.http1.assemble import assemble_body
+from mitmproxy.net.http.http1.assemble import assemble_request
+from mitmproxy.net.http.http1.assemble import assemble_request_head
+from mitmproxy.net.http.http1.assemble import assemble_response
+from mitmproxy.net.http.http1.assemble import assemble_response_head
+from mitmproxy.test.tutils import treq
+from mitmproxy.test.tutils import tresp
 
 
 def test_assemble_request():
     assert assemble_request(treq()) == (
-        b"GET /path HTTP/1.1\r\n"
-        b"header: qvalue\r\n"
-        b"content-length: 7\r\n"
-        b"\r\n"
-        b"content"
+        b"GET /path HTTP/1.1\r\nheader: qvalue\r\ncontent-length: 7\r\n\r\ncontent"
     )
 
     with pytest.raises(ValueError):
@@ -70,13 +70,25 @@ def test_assemble_body():
     c = list(assemble_body(Headers(), [b"body"], Headers()))
     assert c == [b"body"]
 
-    c = list(assemble_body(Headers(transfer_encoding="chunked"), [b"123456789a", b""], Headers()))
+    c = list(
+        assemble_body(
+            Headers(transfer_encoding="chunked"), [b"123456789a", b""], Headers()
+        )
+    )
     assert c == [b"a\r\n123456789a\r\n", b"0\r\n\r\n"]
 
-    c = list(assemble_body(Headers(transfer_encoding="chunked"), [b"123456789a"], Headers()))
+    c = list(
+        assemble_body(Headers(transfer_encoding="chunked"), [b"123456789a"], Headers())
+    )
     assert c == [b"a\r\n123456789a\r\n", b"0\r\n\r\n"]
 
-    c = list(assemble_body(Headers(transfer_encoding="chunked"), [b"123456789a"], Headers(trailer="trailer")))
+    c = list(
+        assemble_body(
+            Headers(transfer_encoding="chunked"),
+            [b"123456789a"],
+            Headers(trailer="trailer"),
+        )
+    )
     assert c == [b"a\r\n123456789a\r\n", b"0\r\ntrailer: trailer\r\n\r\n"]
 
     with pytest.raises(ValueError):
@@ -90,7 +102,10 @@ def test_assemble_request_line():
     assert _assemble_request_line(authority_request) == b"CONNECT address:22 HTTP/1.1"
 
     absolute_request = treq(scheme=b"http", authority=b"address:22").data
-    assert _assemble_request_line(absolute_request) == b"GET http://address:22/path HTTP/1.1"
+    assert (
+        _assemble_request_line(absolute_request)
+        == b"GET http://address:22/path HTTP/1.1"
+    )
 
 
 def test_assemble_request_headers():
